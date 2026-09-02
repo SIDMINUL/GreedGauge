@@ -1,42 +1,72 @@
 # 📊 GreedGauge
 
-> **Gauging greed to trade smarter.**
-> A data science project exploring the relationship between Bitcoin market sentiment and trader performance on the Hyperliquid decentralised exchange.
+> **Gauging greed to understand trader behavior.**
 
----
+GreedGauge is a data-science project that studies the relationship between **Bitcoin market sentiment** and **Hyperliquid trader performance**. It combines historical trade data with the Bitcoin Fear & Greed Index to analyze profitability, win rates, trading direction, trader behavior, coin-level performance, and sentiment-driven patterns.
 
-## 🧠 Overview
+## ✨ Features
 
-GreedGauge merges two powerful datasets — **Hyperliquid historical trade data** and the **Bitcoin Fear & Greed Index** — to uncover how market psychology drives trader profitability. The project surfaces hidden behavioral patterns, segments traders into archetypes, and delivers actionable insights for smarter crypto trading strategies.
+- 📈 Net PnL analysis across market-sentiment regimes
+- 😨 Fear & Greed Index integration
+- 📊 Win-rate, trade-volume, and cumulative-PnL analysis
+- ↔️ Long vs. Short performance comparison
+- 👤 Trader-level performance analysis
+- 🧬 K-Means behavioral clustering with PCA visualization
+- 🪙 Coin-level performance analysis
+- 🔥 Coin × sentiment heatmap
+- 📐 Statistical validation using ANOVA, Pearson correlation, and Kruskal-Wallis
+- 🌐 Streamlit dashboard for quick interactive exploration
+- 🖼️ Nine generated analysis charts
 
-This analysis was built as part of the **PrimeTrade.ai Junior Data Scientist Assignment**.
+## 🧠 Analysis Pipeline
 
----
+The full analysis in `crypto.py` covers:
 
-## 🔍 Key Findings
+1. Load and clean trade and sentiment datasets
+2. Merge trades with the Fear & Greed Index by date
+3. Exploratory data analysis
+4. PnL by sentiment
+5. Win rate, volume, and total PnL by sentiment
+6. Long vs. Short performance
+7. Individual trader performance
+8. K-Means behavioral clustering + PCA
+9. Daily and monthly PnL timelines
+10. Coin-level performance
+11. Coin × sentiment heatmap
+12. Statistical validation
+13. Final summary and chart generation
 
-- 📈 Traders earn **3.2× higher average PnL** during Fear vs Greed markets ($112.6 vs $56.0 per trade)
-- 🏆 Win rates peak during **Fear (86.6%)** and drop to their lowest during **Extreme Greed (75.8%)**
-- 📉 **Extreme Greed = worst returns** — consistent across coins, directions, and trader types
-- 🔁 Long trades outperform shorts in **every single sentiment regime**
-- 🧬 4 distinct trader archetypes identified: Elite, Consistent Pros, High-Frequency, Retail/Casual
-- ✅ Differences are **statistically significant** — ANOVA F=10.13, p<0.001
+## 📊 Streamlit Dashboard
 
----
+`app.py` provides a lightweight interactive dashboard using the same project datasets.
+
+It currently displays:
+
+- Total trades
+- Unique traders
+- Unique coins
+- Cumulative net PnL over time
+- Average PnL by market sentiment
+- Trade counts by sentiment
+
+Run it with:
+
+```bash
+streamlit run app.py
+```
 
 ## 📁 Project Structure
 
-```
+```text
 GreedGauge/
-│
-├── analysis.py                  # Main analysis script (all 13 steps)
-├── requirements.txt             # Python dependencies
-├── README.md                    # You are here
-│
-├── data/
-│   ├── compressed_data_csv      # Hyperliquid historical trades
-│   └── fear_greed_index.csv     # Bitcoin Fear & Greed Index
-│
+├── app.py
+├── crypto.py
+├── run_analysis.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+├── compressed_data.csv.gz
+├── fear_greed_index.csv
 └── charts/
     ├── 01_sentiment_overview.png
     ├── 02_pnl_by_sentiment.png
@@ -49,127 +79,81 @@ GreedGauge/
     └── 09_coin_sentiment_heatmap.png
 ```
 
----
-
 ## 🚀 Getting Started
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/SIDMINUL/GreedGauge.git
 cd GreedGauge
 ```
 
 ### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Add the datasets
-Place both data files inside a `data/` folder:
-```
-data/compressed_data_csv
-data/fear_greed_index.csv
-```
+### 3. Run the full analysis
 
-### 4. Run the analysis
+The trade dataset is stored as `compressed_data.csv.gz`. The wrapper temporarily decompresses it, runs `crypto.py`, and removes the temporary uncompressed file when finished.
+
 ```bash
-python analysis.py
+python run_analysis.py
 ```
 
-All 9 charts will be saved automatically to the `charts/` directory.
+The nine charts are generated inside `charts/`.
 
----
+### 4. Run the dashboard
 
-## 📦 Dependencies
-
-| Package | Purpose |
-|---|---|
-| `pandas` | Data loading, cleaning, merging |
-| `numpy` | Numerical operations |
-| `matplotlib` | Chart generation |
-| `seaborn` | Heatmap visualisation |
-| `scikit-learn` | K-Means clustering, PCA, StandardScaler |
-| `scipy` | ANOVA, Pearson correlation, Kruskal-Wallis |
-
-Install all with:
 ```bash
-pip install -r requirements.txt
+streamlit run app.py
 ```
 
----
+## 📦 Tech Stack
 
-## 📊 Analysis Pipeline
-
-| Step | Description |
+| Technology | Purpose |
 |---|---|
-| 1 | Load & clean both datasets |
-| 2 | Merge on date — join sentiment to every trade |
-| 3 | Exploratory Data Analysis (EDA) |
-| 4 | Average & median PnL by sentiment + box-plots |
-| 5 | Win rate, volume & cumulative PnL by sentiment |
-| 6 | Long vs Short performance by sentiment |
-| 7 | Individual trader aggregation & ranking |
-| 8 | K-Means behavioral clustering + PCA visualisation |
-| 9 | Monthly & daily PnL timeline coloured by sentiment |
-| 10 | Coin-level performance analysis |
-| 11 | Coin × Sentiment cross-tab heatmap |
-| 12 | Statistical validation (ANOVA, Pearson r, Kruskal-Wallis) |
-| 13 | Final summary printout |
-
----
+| Python | Data analysis and application logic |
+| Pandas | Data loading, cleaning, aggregation, and merging |
+| NumPy | Numerical operations |
+| Matplotlib | Data visualization |
+| Seaborn | Statistical visualizations and heatmaps |
+| Scikit-learn | K-Means, PCA, and feature scaling |
+| SciPy | Statistical testing and correlation analysis |
+| Streamlit | Interactive dashboard |
 
 ## 🗂️ Datasets
 
 ### Hyperliquid Historical Trades
-- **211,224 rows** across 32 unique trader accounts
-- Covers **April 2023 – June 2025**
-- Columns: `Account`, `Coin`, `Execution Price`, `Size USD`, `Side`, `Direction`, `Closed PnL`, `Fee`, `Timestamp`, and more
+
+Stored as `compressed_data.csv.gz`. The dataset contains historical trader activity including account, coin, execution price, trade size, direction, closed PnL, fees, and timestamps.
 
 ### Bitcoin Fear & Greed Index
-- **2,644 daily observations** from February 2018 – May 2025
-- Score: 0 (Extreme Fear) → 100 (Extreme Greed)
-- Categories: `Extreme Fear`, `Fear`, `Neutral`, `Greed`, `Extreme Greed`
 
----
+Stored as `fear_greed_index.csv`. It contains daily sentiment observations ranging from **Extreme Fear** to **Extreme Greed**.
 
-## 📈 Sample Charts
+## 📈 Generated Charts
 
-| Chart | Insight |
+| Chart | Analysis |
 |---|---|
-| Sentiment Overview | Distribution of Fear/Greed days across 7 years |
-| PnL by Sentiment | Fear-period trades earn 3× more than Greed |
-| Win Rate by Sentiment | Win rate drops sharply during Extreme Greed |
-| Long vs Short | Long bias profitable in every sentiment regime |
-| Trader Clusters | 4 behavioural archetypes via K-Means + PCA |
-| Coin × Sentiment Heatmap | BTC most stable; altcoins thrive in Fear only |
-
----
-
-## 💡 Strategic Insights
-
-1. **Scale up during Fear** — increase position size when the index reads 0–40
-2. **Reduce exposure during Greed** — both win rate and PnL per trade deteriorate
-3. **Stick to BTC for all-weather trading** — most consistent across all sentiment regimes
-4. **Reserve high-beta altcoins for Fear dips** — their edge disappears during Greed
-5. **Long bias was justified in 2023–2025** — shorts underperformed in every sentiment regime
-
----
+| `01_sentiment_overview.png` | Fear & Greed distribution and timeline |
+| `02_pnl_by_sentiment.png` | PnL statistics by sentiment |
+| `03_winrate_volume.png` | Win rate, volume, and total PnL |
+| `04_long_short_sentiment.png` | Long vs. Short performance |
+| `05_trader_analysis.png` | Trader performance and distributions |
+| `06_trader_clusters.png` | K-Means clusters and PCA projection |
+| `07_pnl_timeline.png` | Monthly and daily PnL timeline |
+| `08_coin_analysis.png` | Coin-level performance |
+| `09_coin_sentiment_heatmap.png` | Coin × sentiment PnL comparison |
 
 ## ⚠️ Limitations
 
-- Small trader cohort (32 accounts) — findings may not generalise broadly
-- No leverage-normalised returns — risk-adjusted comparison is limited
-- Single exchange (Hyperliquid) — venue-specific dynamics may apply
-- Timeframe bias — dataset spans a predominantly bullish market cycle
+- The trader sample represents activity from a single exchange and should not be treated as representative of the entire crypto market.
+- Historical relationships between sentiment and PnL do not establish causation.
+- Trader clustering depends on the selected features and K-Means configuration.
+- Results are sensitive to the available time period and dataset quality.
 
----
+## 📌 Note
 
-## 🤝 Acknowledgements
-
-- **Hyperliquid** for the on-chain trade data
-- **Alternative.me** for the Bitcoin Fear & Greed Index
-- **PrimeTrade.ai** for the assignment brief and dataset
-
----
-
-*GreedGauge — because knowing when the market is greedy is half the edge.*
+The analysis is intended for **data-science and exploratory research purposes**. Historical patterns should not be interpreted as financial advice or guaranteed future trading signals.
