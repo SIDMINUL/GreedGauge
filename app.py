@@ -17,8 +17,8 @@ def load_data():
     trades.columns = trades.columns.str.strip()
     sentiment.columns = sentiment.columns.str.strip()
 
-    # Hyperliquid timestamps are normally Unix milliseconds. Detect other
-    # common Unix timestamp units defensively so the merge remains reliable.
+    # Hyperliquid timestamps are normally Unix milliseconds. Detect common
+    # Unix timestamp units defensively.
     timestamp = pd.to_numeric(trades["Timestamp"], errors="coerce")
     median_timestamp = timestamp.dropna().median()
     if median_timestamp >= 1e17:
@@ -30,15 +30,17 @@ def load_data():
     else:
         timestamp_unit = "s"
 
-    trades["date"] = pd.to_datetime(
-        timestamp, unit=timestamp_unit, errors="coerce", utc=True
-    ).dt.tz_localize(None).dt.normalize()
+    trades["date"] = (
+        pd.to_datetime(timestamp, unit=timestamp_unit, errors="coerce", utc=True)
+        .dt.tz_localize(None)
+        .dt.normalize()
+    )
 
     trades["Closed PnL"] = pd.to_numeric(
         trades["Closed PnL"], errors="coerce"
-    ).fillna(0)
+    )
     trades["Fee"] = pd.to_numeric(trades["Fee"], errors="coerce").fillna(0)
-    trades["Net PnL"] = trades["Closed PnL"] - trades["Fee"]
+    trades["Net PnL"] = trades["Closed PnL"].fillna(0) - trades["Fee"]
 
     sentiment_date = next(
         (c for c in sentiment.columns if c.lower() in {"date", "timestamp", "datetime"}),
@@ -58,9 +60,11 @@ def load_data():
             "Fear & Greed dataset must contain a date and classification column."
         )
 
-    sentiment[sentiment_date] = pd.to_datetime(
-        sentiment[sentiment_date], errors="coerce", utc=True
-    ).dt.tz_localize(None).dt.normalize()
+    sentiment[sentiment_date] = (
+        pd.to_datetime(sentiment[sentiment_date], errors="coerce", utc=True)
+        .dt.tz_localize(None)
+        .dt.normalize()
+    )
     sentiment[sentiment_col] = sentiment[sentiment_col].astype("string").str.strip()
     sentiment = sentiment.dropna(subset=[sentiment_date, sentiment_col])
     sentiment = sentiment.drop_duplicates(subset=[sentiment_date], keep="last")
@@ -91,39 +95,39 @@ st.line_chart(pnl_timeline, width="stretch")
 
 st.subheader("PnL by Sentiment")
 
-# PnL analysis should use realized/closing trades, matching the analysis script.
-if "Direction" in trades.columns:
-    closing_mask = trades["Direction"].astype("string").str.strip().isin(
-        ["Close Long", "Close Short"]
-    )
-    pnl_trades = trades.loc[closing_mask].copy()
-else:
-    pnl_trades = trades.copy()
+# Prefer realized/closing trades when the dataset exposes standard
+# Hyperliquid close-direction labels. If those labels are different or absent,
+# use rows with an actual Closed PnL value instead of showing an empty chart.
+pnl_trades = trades.dropna(subset=["date", "Closed PnL"]).copy()
 
-# Exact daily merge: both datasets are normalized to midnight first.
-merged = pnl_trades.merge(
-    sentiment[[sentiment_date, sentiment_col]],
+if "Direction" in pnl_trades.columns:
+    directions = pnl_trades["Direction"].astype("string").str.strip()
+    standard_close_labels = {"Close Long", "Close Short"}
+    closing_trades = pnl_trades[directions.isin(standard_close_labels)].copy()
+
+    if not closing_trades.empty:
+        pnl_trades = closing_trades
+        analysis_source = "standard closing-direction rows"
+    else:
+        analysis_source = "rows with a valid Closed PnL value (close labels not recognized)"
+else:
+    analysis_source = "rows with a valid Closed PnL value"
+
+# Match on the calendar date. If exact dates do not overlap, use a one-day
+# nearest-date tolerance to handle timezone/data-source boundary differences.
+left = pnl_trades.sort_values("date").copy()
+right = sentiment[[sentiment_date, sentiment_col]].sort_values(sentiment_date).copy()
+
+merged = pd.merge_asof(
+    left,
+    right,
     left_on="date",
     right_on=sentiment_date,
-    how="left",
+    direction="nearest",
+    tolerance=pd.Timedelta(days=1),
 )
 
 matched = merged[sentiment_col].notna().sum()
-
-if matched == 0:
-    # A one-day nearest-date fallback handles timezone/data-source boundary
-    # differences without inventing sentiment values beyond one day.
-    left = pnl_trades.dropna(subset=["date"]).sort_values("date").copy()
-    right = sentiment[[sentiment_date, sentiment_col]].sort_values(sentiment_date).copy()
-    merged = pd.merge_asof(
-        left,
-        right,
-        left_on="date",
-        right_on=sentiment_date,
-        direction="nearest",
-        tolerance=pd.Timedelta(days=1),
-    )
-    matched = merged[sentiment_col].notna().sum()
 
 if matched > 0:
     grouped = (
@@ -135,9 +139,19 @@ if matched > 0:
 
     st.dataframe(grouped, width="stretch")
     st.bar_chart(grouped["mean"], width="stretch")
-    st.caption(f"Matched {matched:,} closing trades to a Fear & Greed sentiment day.")
+    st.caption(
+        f"Matched {matched:,} trades using {analysis_source}. "
+        f"Trade dates: {left['date'].min().date()} → {left['date'].max().date()} | "
+        f"Fear & Greed dates: {right[sentiment_date].min().date()} → "
+        f"{right[sentiment_date].max().date()}"
+    )
 else:
     st.warning(
-        "No closing trades could be matched to the Fear & Greed dates. "
-        "Check the dataset date ranges."
+        "The trade and Fear & Greed datasets have no overlapping dates within "
+        "the 1-day matching tolerance."
+    )
+    st.info(
+        f"Trade dates: {left['date'].min().date()} → {left['date'].max().date()} | "
+        f"Fear & Greed dates: {right[sentiment_date].min().date()} → "
+        f"{right[sentiment_date].max().date()}"
     )
